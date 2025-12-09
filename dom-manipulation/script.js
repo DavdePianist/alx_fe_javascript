@@ -1,28 +1,28 @@
-// ---------------------------------------------
+// ----------------------------------------------------
 // STEP 1: Load quotes from Local Storage
-// ---------------------------------------------
+// ----------------------------------------------------
 let quotes = JSON.parse(localStorage.getItem("quotes")) || [
   { text: "The best way to predict the future is to create it.", category: "Motivation" },
   { text: "Success is not final, failure is not fatal.", category: "Success" },
   { text: "Believe you can and you're halfway there.", category: "Confidence" }
 ];
 
-// DOM elements
 const quoteDisplay = document.getElementById("quoteDisplay");
 const categoryFilter = document.getElementById("categoryFilter");
 const newQuoteBtn = document.getElementById("newQuote");
+const syncStatus = document.getElementById("syncStatus");
+const syncNow = document.getElementById("syncNow");
 
-// Save quotes back to Local Storage
 function saveQuotes() {
   localStorage.setItem("quotes", JSON.stringify(quotes));
 }
 
-// ---------------------------------------------
-// STEP 2A: Show a Random Quote (Math.random)
-// ---------------------------------------------
+// ----------------------------------------------------
+// STEP 2: Show Random Quote (Math.random)
+// ----------------------------------------------------
 function showRandomQuote() {
-  const randomIndex = Math.floor(Math.random() * quotes.length);  // REQUIRED
-  const { text, category } = quotes[randomIndex];
+  const rand = Math.floor(Math.random() * quotes.length);
+  const { text, category } = quotes[rand];
 
   quoteDisplay.innerHTML = `
     <p>"${text}"</p>
@@ -30,9 +30,9 @@ function showRandomQuote() {
   `;
 }
 
-// ---------------------------------------------
-// STEP 2B: Populate Category Dropdown
-// ---------------------------------------------
+// ----------------------------------------------------
+// Populate Categories
+// ----------------------------------------------------
 function populateCategories() {
   categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
 
@@ -45,31 +45,22 @@ function populateCategories() {
     categoryFilter.appendChild(option);
   });
 
-  const savedFilter = localStorage.getItem("selectedCategory");
-  if (savedFilter) categoryFilter.value = savedFilter;
+  const saved = localStorage.getItem("selectedCategory");
+  if (saved) categoryFilter.value = saved;
 }
 
-// ---------------------------------------------
-// STEP 2C: Filter Quotes by Category
-// ---------------------------------------------
+// ----------------------------------------------------
+// Filter Quotes
+// ----------------------------------------------------
 function filterQuotes() {
   const selected = categoryFilter.value;
-
   localStorage.setItem("selectedCategory", selected);
 
   quoteDisplay.innerHTML = "";
 
   const filtered =
-    selected === "all"
-      ? quotes
-      : quotes.filter(q => q.category === selected);
+    selected === "all" ? quotes : quotes.filter(q => q.category === selected);
 
-  if (filtered.length === 0) {
-    quoteDisplay.innerHTML = "<p>No quotes available in this category.</p>";
-    return;
-  }
-
-  // Display all matching quotes
   filtered.forEach(q => {
     const p = document.createElement("p");
     p.textContent = `"${q.text}" — ${q.category}`;
@@ -77,16 +68,15 @@ function filterQuotes() {
   });
 }
 
-// ---------------------------------------------
-// STEP 3: Add New Quote
-// Updates Category + LocalStorage + UI
-// ---------------------------------------------
+// ----------------------------------------------------
+// Add Quote (Updates Storage + Categories)
+// ----------------------------------------------------
 function addQuote() {
   const text = document.getElementById("newQuoteText").value.trim();
   const category = document.getElementById("newQuoteCategory").value.trim();
 
   if (!text || !category) {
-    alert("Please enter both a quote and a category.");
+    alert("Both fields are required.");
     return;
   }
 
@@ -98,13 +88,81 @@ function addQuote() {
 
   document.getElementById("newQuoteText").value = "";
   document.getElementById("newQuoteCategory").value = "";
-
-  alert("Quote added successfully!");
 }
 
-// ---------------------------------------------
-// INITIALIZE APPLICATION
-// ---------------------------------------------
+// =====================================================================
+// 🔥🔥 STEP 4 — SERVER SYNC + CONFLICT RESOLUTION 🔥🔥
+// =====================================================================
+
+// Mock server endpoint using JSONPlaceholder
+const SERVER_URL = "https://jsonplaceholder.typicode.com/posts";
+
+// ----------------------------------------------------
+// Fetch quotes from server (Simulated)
+// ----------------------------------------------------
+async function fetchServerQuotes() {
+  const response = await fetch(SERVER_URL);
+  const data = await response.json();
+
+  // Simulate server-provided quotes by mapping titles
+  return data.slice(0, 5).map(item => ({
+    text: item.title,
+    category: "Server"
+  }));
+}
+
+// ----------------------------------------------------
+// Conflict Resolution Strategy: SERVER WINS BY DEFAULT
+// ----------------------------------------------------
+function resolveConflict(serverQuotes) {
+  const localJSON = JSON.stringify(quotes);
+  const serverJSON = JSON.stringify(serverQuotes);
+
+  if (localJSON === serverJSON) return; // No conflict
+
+  if (confirm("Server data is different from your local data.\nUse server version?")) {
+    quotes = serverQuotes;
+    saveQuotes();
+    populateCategories();
+    filterQuotes();
+    alert("Local data replaced with server version.");
+  } else {
+    alert("You kept your local version.");
+  }
+}
+
+// ----------------------------------------------------
+// Sync Logic
+// ----------------------------------------------------
+async function syncWithServer() {
+  syncStatus.style.display = "block";
+  syncStatus.textContent = "Syncing with server…";
+
+  try {
+    const serverQuotes = await fetchServerQuotes();
+
+    resolveConflict(serverQuotes);
+
+    syncStatus.textContent = "Sync complete!";
+    setTimeout(() => (syncStatus.style.display = "none"), 2000);
+
+  } catch (err) {
+    syncStatus.textContent = "Sync failed!";
+    console.error(err);
+  }
+}
+
+// ----------------------------------------------------
+// Auto-sync every 20 seconds
+// ----------------------------------------------------
+setInterval(syncWithServer, 20000);
+
+// Manual sync button
+syncNow.addEventListener("click", syncWithServer);
+
+// ----------------------------------------------------
+// INITIALIZE APP
+// ----------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
   populateCategories();
   filterQuotes();
