@@ -69,7 +69,7 @@ function filterQuotes() {
 }
 
 // ----------------------------------------------------
-// Add Quote (Updates Storage + Categories)
+// Add Quote
 // ----------------------------------------------------
 function addQuote() {
   const text = document.getElementById("newQuoteText").value.trim();
@@ -80,92 +80,4 @@ function addQuote() {
     return;
   }
 
-  quotes.push({ text, category });
-
-  saveQuotes();
-  populateCategories();
-  filterQuotes();
-
-  document.getElementById("newQuoteText").value = "";
-  document.getElementById("newQuoteCategory").value = "";
-}
-
-// =====================================================================
-// 🔥🔥 STEP 4 — SERVER SYNC + CONFLICT RESOLUTION 🔥🔥
-// =====================================================================
-
-// Mock server endpoint using JSONPlaceholder
-const SERVER_URL = "https://jsonplaceholder.typicode.com/posts";
-
-// ----------------------------------------------------
-// Fetch quotes from server (Simulated)
-// ----------------------------------------------------
-async function fetchServerQuotes() {
-  const response = await fetch(SERVER_URL);
-  const data = await response.json();
-
-  // Simulate server-provided quotes by mapping titles
-  return data.slice(0, 5).map(item => ({
-    text: item.title,
-    category: "Server"
-  }));
-}
-
-// ----------------------------------------------------
-// Conflict Resolution Strategy: SERVER WINS BY DEFAULT
-// ----------------------------------------------------
-function resolveConflict(serverQuotes) {
-  const localJSON = JSON.stringify(quotes);
-  const serverJSON = JSON.stringify(serverQuotes);
-
-  if (localJSON === serverJSON) return; // No conflict
-
-  if (confirm("Server data is different from your local data.\nUse server version?")) {
-    quotes = serverQuotes;
-    saveQuotes();
-    populateCategories();
-    filterQuotes();
-    alert("Local data replaced with server version.");
-  } else {
-    alert("You kept your local version.");
-  }
-}
-
-// ----------------------------------------------------
-// Sync Logic
-// ----------------------------------------------------
-async function syncWithServer() {
-  syncStatus.style.display = "block";
-  syncStatus.textContent = "Syncing with server…";
-
-  try {
-    const serverQuotes = await fetchServerQuotes();
-
-    resolveConflict(serverQuotes);
-
-    syncStatus.textContent = "Sync complete!";
-    setTimeout(() => (syncStatus.style.display = "none"), 2000);
-
-  } catch (err) {
-    syncStatus.textContent = "Sync failed!";
-    console.error(err);
-  }
-}
-
-// ----------------------------------------------------
-// Auto-sync every 20 seconds
-// ----------------------------------------------------
-setInterval(syncWithServer, 20000);
-
-// Manual sync button
-syncNow.addEventListener("click", syncWithServer);
-
-// ----------------------------------------------------
-// INITIALIZE APP
-// ----------------------------------------------------
-document.addEventListener("DOMContentLoaded", () => {
-  populateCategories();
-  filterQuotes();
-});
-
-newQuoteBtn.addEventListener("click", showRandomQuote);
+  quote
