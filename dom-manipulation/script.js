@@ -1,3 +1,10 @@
+// Load quotes from local storage OR use default if none exist
+let quotes = JSON.parse(localStorage.getItem("quotes")) || [
+  { text: "The best way to predict the future is to create it.", category: "Motivation" },
+  { text: "Life is 10% what happens to us and 90% how we react to it.", category: "Life" }
+];
+
+
 // STEP 2: Advanced DOM Manipulation
 
 // Array of quote objects
