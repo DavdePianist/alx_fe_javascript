@@ -1,4 +1,6 @@
-// Load local quotes
+// ----------------------------------------------------
+// STEP 1: Load quotes from Local Storage
+// ----------------------------------------------------
 let quotes = JSON.parse(localStorage.getItem("quotes")) || [
   { text: "The best way to predict the future is to create it.", category: "Motivation" },
   { text: "Success is not final, failure is not fatal.", category: "Success" },
@@ -11,18 +13,19 @@ const newQuoteBtn = document.getElementById("newQuote");
 const syncStatus = document.getElementById("syncStatus");
 const syncNow = document.getElementById("syncNow");
 
+// Save quotes locally
 function saveQuotes() {
   localStorage.setItem("quotes", JSON.stringify(quotes));
 }
 
-// Show random quote
+// Show a random quote
 function showRandomQuote() {
   const rand = Math.floor(Math.random() * quotes.length);
   const { text, category } = quotes[rand];
   quoteDisplay.innerHTML = `<p>"${text}"</p><span style="font-style: italic;">Category: ${category}</span>`;
 }
 
-// Populate categories
+// Populate category dropdown
 function populateCategories() {
   categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
   const categories = [...new Set(quotes.map(q => q.category))];
@@ -36,7 +39,7 @@ function populateCategories() {
   if (saved) categoryFilter.value = saved;
 }
 
-// Filter quotes
+// Filter quotes by category
 function filterQuotes() {
   const selected = categoryFilter.value;
   localStorage.setItem("selectedCategory", selected);
@@ -54,17 +57,19 @@ function addQuote() {
   const text = document.getElementById("newQuoteText").value.trim();
   const category = document.getElementById("newQuoteCategory").value.trim();
   if (!text || !category) return alert("Both fields are required.");
+
   quotes.push({ text, category });
   saveQuotes();
   populateCategories();
   filterQuotes();
+
   document.getElementById("newQuoteText").value = "";
   document.getElementById("newQuoteCategory").value = "";
 }
 
-// ---------------------------------------------
-// SERVER SYNC (GET + POST)
-// ---------------------------------------------
+// ----------------------------------------------------
+// SERVER SIMULATION
+// ----------------------------------------------------
 const SERVER_URL = "https://jsonplaceholder.typicode.com/posts";
 
 // Fetch server quotes
@@ -74,13 +79,13 @@ async function fetchQuotesFromServer() {
   return data.slice(0, 5).map(item => ({ text: item.title, category: "Server" }));
 }
 
-// POST local quotes to server
-async function syncToServer() {
+// Post local quotes to server
+async function postQuotesToServer() {
   try {
     await fetch(SERVER_URL, {
-      method: "POST",                          // Required
-      headers: { "Content-Type": "application/json" },  // Required
-      body: JSON.stringify(quotes)             // Send local quotes
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(quotes)
     });
     alert("Local quotes synced to server!");
   } catch (err) {
@@ -89,14 +94,19 @@ async function syncToServer() {
   }
 }
 
-// Sync logic (GET + conflict resolution)
-async function syncWithServer() {
+// ----------------------------------------------------
+// 🔹 REQUIRED FUNCTION: syncQuotes()
+// Handles GET + conflict resolution
+// ----------------------------------------------------
+async function syncQuotes() {
   syncStatus.style.display = "block";
   syncStatus.textContent = "Syncing with server…";
   try {
     const serverQuotes = await fetchQuotesFromServer();
+
     const localJSON = JSON.stringify(quotes);
     const serverJSON = JSON.stringify(serverQuotes);
+
     if (localJSON !== serverJSON) {
       if (confirm("Server data differs. Use server version?")) {
         quotes = serverQuotes;
@@ -105,6 +115,7 @@ async function syncWithServer() {
         filterQuotes();
       }
     }
+
     syncStatus.textContent = "Sync complete!";
     setTimeout(() => (syncStatus.style.display = "none"), 2000);
   } catch (err) {
@@ -113,16 +124,19 @@ async function syncWithServer() {
   }
 }
 
-// Auto-sync every 20s
-setInterval(syncWithServer, 20000);
-syncNow.addEventListener("click", syncWithServer);
+// Auto-sync every 20 seconds
+setInterval(syncQuotes, 20000);
 
-// Manual POST sync button (optional)
-document.getElementById("syncToServerBtn")?.addEventListener("click", syncToServer);
+// Manual sync buttons
+syncNow.addEventListener("click", syncQuotes);
+document.getElementById("syncToServerBtn")?.addEventListener("click", postQuotesToServer);
 
-// Initialize
+// ----------------------------------------------------
+// INITIALIZE APP
+// ----------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
   populateCategories();
   filterQuotes();
 });
+
 newQuoteBtn.addEventListener("click", showRandomQuote);
